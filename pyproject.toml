@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "baggage-router"
+version = "1.0.0"
+description = "Hub-and-spoke airline baggage routing: Dijkstra + greedy assignment + multiprocessing"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "hypothesis", "mypy", "ruff", "black"]
+
+[project.scripts]
+baggage-router = "baggage_router.cli:main"
+
+[tool.setuptools]
+packages = ["baggage_router"]
+
+[tool.setuptools.package-data]
+baggage_router = ["web/*.html", "py.typed"]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "tests"]
+testpaths = ["tests"]
+addopts = "--cov=baggage_router --cov-report=term-missing"
+
+[tool.mypy]
+strict = true
+files = ["baggage_router"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.black]
+line-length = 100

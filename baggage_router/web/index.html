@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BagRoute</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--sea:#ECEEF0;--land:#fff;--coast:#C5CAD0;--grid:#E2E5E8;--card:#fff;--cb:#E3E5E8;--ink:#16181B;--mute:#6A7077;--soft:#F3F4F5;--acc:#F2542D;--ok:#1F9D6B;--warn:#D98A0B;--bad:#D9372B;--l0:#A9AFB6;--sh:0 1px 2px rgba(20,22,25,.06),0 8px 24px rgba(20,22,25,.08)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--sea:#0E0F11;--land:#1A1C1F;--coast:#34373C;--grid:#16181A;--card:#18191C;--cb:#27292D;--ink:#F2F3F4;--mute:#9AA0A8;--soft:#202226;--acc:#FFA64D;--ok:#4CC38A;--warn:#E7B24A;--bad:#FF6B5E;--l0:#4B4F56;--sh:0 8px 24px rgba(0,0,0,.4)}}
+:root[data-theme=dark]{--sea:#0E0F11;--land:#1A1C1F;--coast:#34373C;--grid:#16181A;--card:#18191C;--cb:#27292D;--ink:#F2F3F4;--mute:#9AA0A8;--soft:#202226;--acc:#FFA64D;--ok:#4CC38A;--warn:#E7B24A;--bad:#FF6B5E;--l0:#4B4F56;--sh:0 8px 24px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--sea);color:var(--ink);font:400 14px/1.45 Geist,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.map{position:fixed;inset:0}
+#map{width:100%;height:100%;display:block;cursor:grab;touch-action:none}#map.drag{cursor:grabbing}
+.ui{position:fixed;inset:0;pointer-events:none}
+.ui>*{pointer-events:auto}
+.col{position:absolute;top:16px;bottom:16px;display:flex;flex-direction:column;gap:12px;pointer-events:none}
+.col>*{pointer-events:auto}
+.col.l{left:16px;width:300px;overflow:auto;scrollbar-width:none}.col.r{right:16px;width:360px}
+.card{background:var(--card);border:1px solid var(--cb);border-radius:14px;box-shadow:var(--sh);padding:14px 16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px;margin-bottom:12px}
+.brand i{width:28px;height:28px;border-radius:8px;background:var(--ink);display:grid;place-items:center}.brand svg{width:16px;height:16px;fill:var(--card)}
+.brand span{color:var(--mute);font-weight:400}
+.search{position:relative}
+.search input{width:100%;background:var(--soft);border:1px solid transparent;border-radius:10px;padding:9px 12px;outline:none}.search input:focus{border-color:var(--ink)}
+#sug{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--cb);border-radius:10px;box-shadow:var(--sh);z-index:9;overflow:hidden}
+#sug button{display:flex;justify-content:space-between;width:100%;border:0;background:none;padding:8px 12px;text-align:left}#sug button:hover{background:var(--soft)}#sug em{font-style:normal;color:var(--mute)}
+h2{font-size:13px;font-weight:600;margin:0 0 10px;color:var(--mute)}
+.f{display:block;margin-bottom:12px}.f span{display:flex;justify-content:space-between;margin-bottom:3px}.f output{color:var(--mute)}
+.f input[type=range]{width:100%;accent-color:var(--ink);margin:0}
+.f input[type=number]{width:100%;background:var(--soft);border:1px solid transparent;border-radius:8px;padding:6px 9px}
+.pre{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.pre button{background:var(--soft);border:1px solid transparent;border-radius:8px;padding:7px 8px;font-weight:500;text-align:left;line-height:1.2}.pre button:hover{border-color:var(--mute)}.pre small{display:block;color:var(--mute);font-weight:400;font-size:12px}
+.key{display:grid;gap:5px;color:var(--mute);font-size:12.5px;margin-top:4px}.key i{display:inline-block;width:22px;height:4px;border-radius:2px;margin-right:8px;vertical-align:middle}
+.row2{display:flex;gap:8px;margin-top:12px}
+.gb{flex:1;background:none;border:1px solid var(--cb);border-radius:8px;padding:7px;font-weight:500}.gb:hover{border-color:var(--mute)}
+.chip{display:flex;justify-content:space-between;align-items:center;background:var(--soft);border-radius:8px;padding:5px 6px 5px 10px;margin-bottom:6px;font-size:13px}.chip button{border:0;background:none;color:var(--mute);font-weight:500}
+.impact{border-left:3px solid var(--bad);background:var(--soft);border-radius:0 8px 8px 0;padding:8px 10px;font-size:13px;margin-top:8px}
+.kpis{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:10px}
+.kpis b{display:block;font-size:26px;font-weight:600;line-height:1.1;letter-spacing:-.02em}.kpis small{color:var(--mute);font-size:12.5px}
+.stat{display:flex;gap:7px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--cb);color:var(--mute);font-size:12.5px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}.dot.busy{background:var(--warn)}.dot.err{background:var(--bad)}
+.details{flex:1;min-height:0;overflow:auto;scrollbar-width:thin}
+.hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}.hd h1{font-size:18px;font-weight:600;margin:0;letter-spacing:-.01em}.hd span{color:var(--mute);font-size:13px}
+.seg{display:flex;background:var(--soft);border-radius:9px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;border:0;background:none;border-radius:7px;padding:5px 8px;font-weight:500;color:var(--mute)}.seg button[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chips button{border:1px solid var(--cb);background:none;border-radius:999px;padding:2px 10px;font-size:12.5px;color:var(--mute)}.chips button[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;border:0;background:none;border-bottom:1px solid var(--cb);padding:9px 2px;text-align:left}.item:hover{background:var(--soft)}
+.item b{font-weight:600}.item small{display:block;color:var(--mute);font-size:12.5px}
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--soft);white-space:nowrap}
+.pill.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,transparent)}.pill.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}.pill.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 16%,transparent)}
+.meter{display:inline-block;width:64px;height:6px;background:var(--soft);border-radius:3px;vertical-align:middle;margin-right:8px;overflow:hidden}.meter b{display:block;height:100%}
+.back{border:0;background:none;color:var(--mute);padding:0;margin-bottom:10px;font-weight:500}.back:hover{color:var(--ink)}
+.now{background:var(--soft);border-radius:10px;padding:10px 12px;margin:12px 0;border-left:3px solid var(--acc)}.now small{color:var(--mute);display:block}
+.btn{width:100%;border:0;border-radius:10px;padding:10px;font-weight:600;background:var(--ink);color:var(--card);margin-top:10px}.btn.d{background:none;color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 45%,transparent)}
+.steps{list-style:none;margin:12px 0 0;padding:0}
+.steps li{position:relative;padding:0 0 14px 24px;color:var(--mute)}
+.steps li::before{content:"";position:absolute;left:5px;top:6px;bottom:-6px;width:2px;background:var(--cb)}.steps li:last-child::before{display:none}
+.steps li.n::after{content:"";position:absolute;left:0;top:4px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--coast)}
+.steps li.n b{color:var(--ink);font-weight:600}.steps small{display:block}
+.steps li.done{color:var(--mute)}.steps li.done::before{background:var(--ink)}.steps li.n.done::after{background:var(--ink);border-color:var(--ink)}
+.steps li.on::after{background:var(--acc);border-color:var(--acc);box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 22%,transparent)}.steps li.on,.steps li.on b{color:var(--ink)}
+.steps li.lg{padding-bottom:12px}.steps li.lg.on .pill{background:var(--acc);color:#fff}.steps li.lg.on{color:var(--ink)}
+.dock{position:absolute;left:332px;right:392px;bottom:18px;display:flex;justify-content:center;pointer-events:none}
+.dock>div{pointer-events:auto;width:100%;max-width:780px;display:flex;align-items:center;gap:14px;padding:10px 16px}
+.pp{width:38px;height:38px;border-radius:50%;border:0;background:var(--ink);display:grid;place-items:center;flex:none}.pp svg{width:16px;height:16px;fill:var(--card)}
+.clk{font-size:22px;font-weight:600;letter-spacing:-.02em;width:68px;flex:none}
+.scrub{position:relative;flex:1;height:56px;min-width:100px}
+.scrub svg{position:absolute;left:0;top:0;width:100%;height:30px}
+.scrub .ln{position:absolute;left:0;right:0;top:37px;height:2px;background:var(--cb);border-radius:1px}.scrub .pg{position:absolute;left:0;top:37px;height:2px;background:var(--ink);border-radius:1px}
+.scrub input{position:absolute;left:-7px;right:-7px;top:28px;width:calc(100% + 14px);height:20px;margin:0;background:none;-webkit-appearance:none;appearance:none}
+.scrub input:focus-visible{outline:none}.scrub input:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px color-mix(in srgb,var(--acc) 35%,transparent)}.scrub input::-webkit-slider-runnable-track{background:none;height:20px}.scrub input::-moz-range-track{background:none}
+.scrub input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;margin-top:3px;border-radius:50%;background:var(--card);border:2px solid var(--ink);box-shadow:var(--sh)}
+.scrub input::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--card);border:2px solid var(--ink)}
+.tk{position:absolute;left:0;right:0;bottom:0;height:12px;font-size:11px;color:var(--mute)}.tk span{position:absolute;transform:translateX(-50%)}
+.spd{display:flex;background:var(--soft);border-radius:9px;padding:3px;flex:none}.spd button{border:0;background:none;border-radius:7px;padding:4px 9px;font-weight:500;color:var(--mute);font-size:13px}.spd button[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.zoom{position:absolute;right:392px;bottom:100px;display:flex;flex-direction:column;gap:6px}.zoom button{width:34px;height:34px;border-radius:10px;border:1px solid var(--cb);background:var(--card);box-shadow:var(--sh);font-size:17px;line-height:1}
+#tip{position:fixed;display:none;z-index:20;background:var(--ink);color:var(--card);border-radius:8px;padding:6px 10px;font-size:12.5px;pointer-events:none;max-width:240px}
+.ac{cursor:pointer}.ac path{fill:var(--ink);stroke:var(--land);stroke-width:.9}.ac.empty path{fill:var(--mute);opacity:.45}.ac.full path{fill:var(--bad)}.ac.sel path{fill:var(--acc)}
+.apt{cursor:pointer}
+.errbox{border:1px solid var(--bad);color:var(--bad);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+@media(max-width:980px){
+ body{overflow:auto}.map{position:relative;height:56vh}.ui{position:static;pointer-events:auto}
+ .col{position:static;width:auto!important;padding:12px 12px 0;overflow:visible}.col.r{padding-bottom:84px}.details{overflow:visible}
+ .dock{position:fixed;left:0;right:0;bottom:0;padding:8px}.zoom{right:12px;bottom:12px}.tk{display:none}.scrub{height:40px}.spd{display:none}
+}
+</style>
+</head>
+<body>
+<div class="map"><svg id="map" viewBox="0 0 700 700" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of India showing flight lanes and aircraft moving through the planned day"><g id="g-s"></g><g id="g-a"></g><g id="g-t"></g><g id="g-l"></g></svg>
+<div class="zoom"><button id="zi" aria-label="Zoom in">+</button><button id="zo" aria-label="Zoom out">−</button><button id="z0" aria-label="Fit map to screen">⌂</button></div></div>
+<div class="ui">
+<div class="col l">
+<div class="card"><div class="brand"><i><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></i>BagRoute <span>Operations</span></div>
+<div class="search"><input id="q" placeholder="Search bag, flight or airport  ( / )" autocomplete="off" aria-label="Search"><div id="sug" hidden></div></div></div>
+<div class="card"><h2>Scenario</h2>
+<div class="pre"><button data-pre="normal">Normal day<small>1,500 bags</small></button><button data-pre="peak">Peak day<small>4,000 bags</small></button><button data-pre="storm">Delhi closed<small>storm at the hub</small></button><button data-pre="tight">Tight holds<small>60% capacity</small></button></div>
+<label class="f"><span>Bags <output id="o-bags"></output></span><input type="range" id="bags" min="200" max="6000" step="100" value="1500"></label>
+<label class="f"><span>Hub transfer minimum <output id="o-mct"></output></span><input type="range" id="mct" min="30" max="120" step="5" value="60"></label>
+<label class="f"><span>Hold capacity <output id="o-cap"></output></span><input type="range" id="cap" min="40" max="150" step="5" value="100"></label>
+<label class="f"><span>Random seed</span><input type="number" id="seed" min="0" value="1"></label>
+<div class="key"><span><i style="background:var(--l0)"></i>Lane has room</span><span><i style="background:var(--warn)"></i>Lane 60–90% full</span><span><i style="background:var(--bad)"></i>Lane over 90% full</span><span><i style="background:var(--acc);height:6px"></i>Tracked bag</span></div>
+<div class="row2"><button class="gb" id="csv">Export CSV</button><button class="gb" id="theme">Light / dark</button></div></div>
+<div class="card" id="dis" hidden><h2>Disruptions</h2><div id="cx"></div><div id="impact"></div><button class="gb" style="width:100%;margin-top:8px" id="clear">Clear all</button></div>
+</div>
+<div class="col r">
+<div class="card"><div class="kpis"><div><b id="k-ot">–</b><small>on-time delivery</small></div><div><b id="k-un">–</b><small>need attention</small></div><div><b id="k-bag">–</b><small>bags in the air</small></div></div>
+<div class="stat"><span class="dot" id="dot"></span><span id="stat">Starting…</span></div></div>
+<div class="card details" id="right"></div>
+</div>
+<div class="dock"><div class="card"><button class="pp" id="play" aria-label="Play or pause"></button><div class="clk" id="clock">--:--</div>
+<div class="scrub"><svg id="prof" viewBox="0 0 1000 30" preserveAspectRatio="none"></svg><div class="ln"></div><div class="pg" id="pg"></div><input type="range" id="time" aria-label="Time of day"><div class="tk" id="ticks"></div></div>
+<div class="spd" id="spd"><button data-sp="15" aria-pressed="false">Slow</button><button data-sp="40" aria-pressed="true">Normal</button><button data-sp="120" aria-pressed="false">Fast</button></div></div></div>
+</div>
+<div id="tip"></div>
+<script>
+const $=s=>document.querySelector(s),NS='http://www.w3.org/2000/svg';
+const S={net:null,res:null,base:null,focus:null,cx:new Set(),closed:new Set(),t:480,play:false,speed:40,ap:{},fl:{},xy:{},fb:{},tmin:0,tmax:1500,tab:'bags',why:'all',idx:-1};
+const fmt=m=>{if(m==null)return'–';m=Math.floor(m);return String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0')+(m>=1440?' +1':'')};
+const dur=m=>Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ia=c=>S.ap[c].iata,heat=u=>u>.9?'var(--bad)':u>=.6?'var(--warn)':'var(--l0)';
+const SHORT={'no connecting route':'No route','earliest arrival misses deadline':'Too late','capacity exhausted':'Flight full'};
+const WHY={'no connecting route':['No chain of flights reaches the destination with legal transfers after the bag is ready.','Lower the hub transfer minimum, or rebook onto a later departure.'],'earliest arrival misses deadline':['Even the fastest legal route lands after the bag’s deadline.','Hand-carry or expedite, or agree a later delivery time.'],'capacity exhausted':['Every on-time route needs a flight whose hold is already full.','Add hold space on the full flights, or move lower-priority bags off them.']};
+const PRE={normal:[1500,60,100,[]],peak:[4000,60,100,[]],storm:[1500,60,100,['H0']],tight:[1500,60,60,[]]};
+const LAND=[[74.3,34.8],[75.8,35.7],[77.8,35.5],[78.9,34.3],[78,32.6],[79,31],[80.2,30.6],[81,30.2],[80.1,28.9],[81.8,27.9],[84,27.3],[86,26.6],[88.1,26.5],[88.1,27.8],[89,27.3],[89.8,26.7],[92,26.9],[94.5,27.6],[96,29.3],[97.3,28.2],[96,27.2],[95.2,26],[94.6,24.5],[93.4,22.9],[92.6,21.9],[92,23.7],[91.2,23.2],[89.9,22],[89,21.7],[87,21.5],[86.9,20.2],[85,19.3],[83,17.4],[82.2,16.4],[80.3,15.5],[80.2,13.4],[79.8,11.3],[79.3,10.3],[78.2,8.9],[77.5,8.1],[76.5,9],[75,12],[74,14.5],[73.3,16.8],[72.8,19],[72.6,21],[72,21.2],[70.5,20.9],[69,22.3],[70.1,22.9],[68.2,23.6],[68.7,24.3],[70,24.2],[71,25.1],[70.1,26.5],[71,27.8],[72.4,28.2],[74,29.8],[74.9,31.1],[74.6,32.5],[74,33.5]];
+const P=(lon,lat)=>[(lon-67.5)*22,(36.5-lat)*22.6];
+const svg=$('#map'),pool=new Map();let seq=0,tm,last=0,vb=[0,0,700,700],drag=null,moved=0;
+const wide=()=>matchMedia('(min-width:981px)').matches;
+
+/* ---------- boot / data ---------- */
+async function boot(){
+ try{const s=JSON.parse(localStorage.getItem('bagroute')||'null');if(s){$('#bags').value=s.bags;$('#mct').value=s.mct;$('#cap').value=s.cap;$('#seed').value=s.seed}}catch(e){}
+ try{S.net=await (await fetch('/api/network')).json()}catch(e){return fail('Cannot reach the planning server. Start it with: python -m baggage_router serve')}
+ S.net.airports.forEach(a=>{S.ap[a.code]=a;S.xy[a.code]=P(a.lon,a.lat)});S.net.flights.forEach(f=>S.fl[f.id]=f);
+ S.tmin=Math.floor(Math.min(...S.net.flights.map(f=>f.dep))/60)*60;S.tmax=Math.ceil(Math.max(...S.net.flights.map(f=>f.arr))/60)*60;
+ const r=$('#time');r.min=S.tmin;r.max=S.tmax;r.step=1;S.t=Math.max(S.tmin,480);r.value=S.t;
+ $('#ticks').innerHTML=Array.from({length:Math.floor((S.tmax-S.tmin)/180)+1},(_,i)=>{const m=S.tmin+i*180;return`<span style="left:${(m-S.tmin)/(S.tmax-S.tmin)*100}%">${String(Math.floor(m/60)%24).padStart(2,'0')}</span>`}).join('');
+ fit();setPlay(!matchMedia('(prefers-reduced-motion:reduce)').matches);plan(true);
+}
+function params(){const gone=new Set(S.cx);S.net.flights.forEach(f=>{if(S.closed.has(f.o)||S.closed.has(f.d))gone.add(f.id)});
+ return{bags:+$('#bags').value,hub_mct:+$('#mct').value,capacity_scale:+$('#cap').value/100,seed:+$('#seed').value||0,workers:1,cancelled:[...gone]}}
+const post=b=>fetch('/api/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||'Planning failed');return j});
+function plan(now){
+ $('#o-bags').textContent=(+$('#bags').value).toLocaleString();$('#o-mct').textContent=$('#mct').value+' min';$('#o-cap').textContent=$('#cap').value+'%';
+ try{localStorage.setItem('bagroute',JSON.stringify({bags:+$('#bags').value,mct:+$('#mct').value,cap:+$('#cap').value,seed:+$('#seed').value}))}catch(e){}
+ clearTimeout(tm);tm=setTimeout(async()=>{const id=++seq,p=params();setStat('busy','Planning…');
+  try{const dis=p.cancelled.length>0,[res,base]=await Promise.all([post(p),dis?post({...p,cancelled:[]}):null]);if(id!==seq)return;
+   S.res=res;S.base=base;S.fb={};res.bags.forEach(b=>b.legs.forEach(l=>(S.fb[l]=S.fb[l]||[]).push(b)));
+   if(S.focus&&S.focus.t==='bag'&&!res.bags.find(b=>b.id===S.focus.id))S.focus=null;
+   if(now===true){const h=location.hash.slice(1).split('=');if(h[0]==='bag'&&res.bags.find(b=>b.id===h[1]))S.focus={t:'bag',id:h[1]};if(h[0]==='ap'&&S.ap[h[1]])S.focus={t:'ap',id:h[1]};if(h[0]==='fl'&&S.fl[h[1]])S.focus={t:'fl',id:h[1]}}
+   setStat('',`Solved in ${res.summary.ms} ms · ${res.summary.violations===0?'all constraints verified':res.summary.violations+' violations'}`);
+   const e=$('#errbox');if(e)e.remove();profile();render()}catch(e){if(id===seq)fail(e.message)}},now===true?0:220);
+}
+function setStat(c,t){$('#dot').className='dot '+c;$('#stat').textContent=t}
+function fail(m){setStat('err','Error');let e=$('#errbox');if(!e){e=document.createElement('div');e.id='errbox';e.className='errbox';$('#right').prepend(e)}e.textContent=m}
+
+/* ---------- geometry ---------- */
+const key=(a,b)=>a<b?[a,b]:[b,a];
+const ctrl=(a,b)=>{const[x1,y1]=S.xy[a],[x2,y2]=S.xy[b];return[(x1+x2)/2+(y2-y1)*.14,(y1+y2)/2-(x2-x1)*.14]};
+const arcD=(a,b)=>{const[k1,k2]=key(a,b),[x1,y1]=S.xy[k1],[x2,y2]=S.xy[k2],[cx,cy]=ctrl(k1,k2);return`M${x1},${y1}Q${cx},${cy} ${x2},${y2}`};
+function posOn(f,p){const[a,b]=key(f.o,f.d),fwd=f.o===a,q=fwd?p:1-p,[x1,y1]=S.xy[a],[x2,y2]=S.xy[b],[cx,cy]=ctrl(a,b),u=1-q;
+ const x=u*u*x1+2*u*q*cx+q*q*x2,y=u*u*y1+2*u*q*cy+q*q*y2;let tx=2*u*(cx-x1)+2*q*(x2-cx),ty=2*u*(cy-y1)+2*q*(y2-cy);if(!fwd){tx=-tx;ty=-ty}
+ return[x,y,Math.atan2(ty,tx)*180/Math.PI+90]}
+function bagState(b,t){const L=b.legs.map(i=>S.fl[i]),n=L.length;
+ if(t<L[0].dep)return{idx:0,at:L[0].o,txt:`Checked in at ${ia(L[0].o)} · ${L[0].id} departs ${fmt(L[0].dep)}`};
+ for(let k=0;k<n;k++){if(t<L[k].arr)return{idx:2*k+1,fl:L[k],txt:`Aboard ${L[k].id} · ${ia(L[k].o)} → ${ia(L[k].d)}`,sub:`Lands ${fmt(L[k].arr)}`};
+  if(k+1<n&&t<L[k+1].dep)return{idx:2*k+2,at:L[k].d,txt:`Transferring at ${ia(L[k].d)}`,sub:`${Math.ceil(L[k+1].dep-t)} min until ${L[k+1].id}`}}
+ return{idx:2*n,at:b.d,txt:`Delivered at ${ia(b.d)}`,sub:`${b.deadline-L[n-1].arr} min before deadline`}}
+const airborne=t=>S.res.flights.filter(f=>f.dep<=t&&t<f.arr);
+const trackedBag=()=>S.focus&&S.focus.t==='bag'?S.res.bags.find(x=>x.id===S.focus.id):null;
+
+/* ---------- map ---------- */
+function drawStatic(){
+ const agg={},pairs=new Set();S.net.flights.forEach(f=>pairs.add(key(f.o,f.d).join('|')));
+ S.res.flights.forEach(f=>{const k=key(f.o,f.d).join('|');(agg[k]=agg[k]||[0,0]);agg[k][0]+=f.load;agg[k][1]+=f.cap});
+ let s=`<rect x="-600" y="-600" width="2000" height="2000" fill="var(--sea)"/>`;
+ for(let lo=70;lo<=95;lo+=5){const[x]=P(lo,0);s+=`<line x1="${x}" y1="-600" x2="${x}" y2="1400" stroke="var(--grid)" stroke-width=".7"/>`}
+ for(let la=10;la<=35;la+=5){const[,y]=P(0,la);s+=`<line x1="-600" y1="${y}" x2="1400" y2="${y}" stroke="var(--grid)" stroke-width=".7"/>`}
+ s+=`<path d="M${LAND.map(([a,b])=>P(a,b).join(',')).join('L')}Z" fill="var(--land)" stroke="var(--coast)" stroke-width="1.3" stroke-linejoin="round"/>`;
+ const lanes=[];pairs.forEach(k=>{const[a,b]=k.split('|'),g=agg[k],u=g&&g[1]?g[0]/g[1]:0;lanes.push([u,a,b,g])});
+ lanes.sort((x,y)=>x[0]-y[0]).forEach(([u,a,b,g])=>{
+  s+=g?`<path d="${arcD(a,b)}" fill="none" stroke="${heat(u)}" stroke-width="${u>=.6?1.5+u*2.2:1.1}" stroke-linecap="round" opacity="${u>=.6?.95:.8}"/>`:`<path d="${arcD(a,b)}" fill="none" stroke="var(--bad)" stroke-width=".9" stroke-dasharray="3 4" opacity=".6"/>`});
+ const b=trackedBag();
+ if(b&&b.ok)b.legs.forEach(id=>{const l=S.fl[id],d=arcD(l.o,l.d);s+=`<path d="${d}" fill="none" stroke="var(--land)" stroke-width="8" stroke-linecap="round"/><path d="${d}" fill="none" stroke="var(--acc)" stroke-width="3.6" stroke-linecap="round"/>`});
+ const f=S.focus;
+ let lab='';S.net.airports.forEach(a=>{const[x,y]=S.xy[a.code],r=a.hub?6.5:3.8,closed=S.closed.has(a.code),sel=f&&f.t==='ap'&&f.id===a.code;
+  lab+=`<text x="${x+r+3.5}" y="${y+3.6}" font-size="${a.hub?12:9.5}" font-weight="${a.hub?700:500}" fill="${a.hub?'var(--ink)':'var(--mute)'}" style="paint-order:stroke;stroke:var(--land);stroke-width:3.5px;pointer-events:none">${a.iata}</text>`;
+  s+=`<g class="apt" data-ap="${a.code}"><circle cx="${x}" cy="${y}" r="${r+8}" fill="transparent"/><circle cx="${x}" cy="${y}" r="${r}" fill="${closed?'var(--bad)':a.hub?'var(--ink)':'var(--land)'}" stroke="${sel?'var(--acc)':closed?'var(--bad)':'var(--ink)'}" stroke-width="${sel?3:1.6}"/></g>`});
+ $('#g-s').innerHTML=s;$('#g-l').innerHTML=lab;drawAir();
+}
+function drawAir(){
+ const t=S.t,air=airborne(t),ga=$('#g-a'),seen=new Set(),f=S.focus;let bags=0;
+ air.forEach(fl=>{seen.add(fl.id);bags+=fl.load;let g=pool.get(fl.id);
+  if(!g){g=document.createElementNS(NS,'g');g.setAttribute('class','ac');g.dataset.fl=fl.id;g.innerHTML='<path d="M0,-6.5L3.6,5L0,3L-3.6,5Z"/>';ga.appendChild(g);pool.set(fl.id,g)}
+  const[x,y,a]=posOn(fl,(t-fl.dep)/(fl.arr-fl.dep)),u=fl.cap?fl.load/fl.cap:0,sel=f&&f.t==='fl'&&f.id===fl.id;
+  g.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${a.toFixed(0)}) scale(${sel?1.7:1})`);
+  g.classList.toggle('empty',!fl.load);g.classList.toggle('full',u>.9);g.classList.toggle('sel',!!sel)});
+ pool.forEach((g,id)=>{if(!seen.has(id)){g.remove();pool.delete(id)}});
+ const b=trackedBag(),tg=$('#g-t');let m='';
+ if(b&&b.ok){const st=bagState(b,t),p=st.fl?posOn(st.fl,(t-st.fl.dep)/(st.fl.arr-st.fl.dep)):S.xy[st.at],calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  m=`<circle cx="${p[0]}" cy="${p[1]}" r="8" fill="none" stroke="var(--acc)" stroke-width="2.4">${calm?'':'<animate attributeName="r" values="7;13;7" dur="1.8s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;.25;1" dur="1.8s" repeatCount="indefinite"/>'}</circle><circle cx="${p[0]}" cy="${p[1]}" r="3.6" fill="var(--acc)" stroke="var(--land)" stroke-width="1.2"/>`;
+  if(st.idx!==S.idx){S.idx=st.idx;paintSteps(st.idx)}const lv=$('#live');if(lv)lv.innerHTML=`<b>${st.txt}</b>${st.sub?`<small>${st.sub}</small>`:''}`}
+ tg.innerHTML=m;
+ $('#clock').textContent=fmt(t).slice(0,5);$('#k-bag').textContent=bags.toLocaleString();
+ $('#pg').style.width=(t-S.tmin)/(S.tmax-S.tmin)*100+'%';
+}
+function profile(){const pts=[];let mx=1;for(let t=S.tmin;t<=S.tmax;t+=10){const v=airborne(t).reduce((a,f)=>a+f.load,0);pts.push(v);mx=Math.max(mx,v)}
+ const d=pts.map((v,i)=>`${i?'L':'M'}${(i/(pts.length-1)*1000).toFixed(1)},${(29-v/mx*26).toFixed(1)}`).join('');
+ $('#prof').innerHTML=`<path d="${d}L1000,30L0,30Z" fill="var(--l0)" opacity=".35"/><path d="${d}" fill="none" stroke="var(--mute)" stroke-width="1.3" vector-effect="non-scaling-stroke"/>`}
+
+/* ---------- panels ---------- */
+function render(){const s=S.res.summary;
+ $('#k-ot').textContent=(s.on_time_rate*100).toFixed(1)+'%';$('#k-un').textContent=s.unassigned.toLocaleString();
+ cxList();S.idx=-1;drawStatic();right()}
+function cxList(){
+ const it=[...S.closed].map(c=>`<div class="chip"><span>${ia(c)} airport closed</span><button data-un-ap="${c}">Reopen</button></div>`).concat([...S.cx].map(id=>{const f=S.fl[id];return`<div class="chip"><span>${id} ${ia(f.o)} → ${ia(f.d)}</span><button data-un-fl="${id}">Restore</button></div>`}));
+ $('#dis').hidden=!it.length;$('#cx').innerHTML=it.join('');const a=S.base,b=S.res.summary;
+ $('#impact').innerHTML=a?`<div class="impact"><b>Impact</b><br>On-time ${(a.summary.on_time_rate*100).toFixed(1)}% → ${(b.on_time_rate*100).toFixed(1)}% (${((b.on_time_rate-a.summary.on_time_rate)*100).toFixed(1)} pts)<br>${(b.unassigned-a.summary.unassigned).toLocaleString()} more bags need attention</div>`:''}
+function steps(b){const L=b.legs.map(i=>S.fl[i]),n=L.length,node=(c,sub,i)=>`<li class="n" data-i="${i}"><b>${ia(c)}</b> ${esc(S.ap[c].name)}<small>${sub}</small></li>`;
+ let h=node(L[0].o,`Departs ${fmt(L[0].dep)}`,0);
+ L.forEach((l,k)=>{h+=`<li class="lg" data-i="${2*k+1}"><span class="pill">${l.id}</span> &nbsp;${fmt(l.dep)} → ${fmt(l.arr)} · ${dur(l.arr-l.dep)}</li>`;
+  h+=node(l.d,k===n-1?`Arrives ${fmt(l.arr)} · ${b.deadline-l.arr} min before deadline`:`Arrives ${fmt(l.arr)} · ${L[k+1].dep-l.arr} min transfer`,2*k+2)});
+ return`<ol class="steps">${h}</ol>`}
+function paintSteps(i){document.querySelectorAll('.steps li').forEach(li=>{const k=+li.dataset.i;li.classList.toggle('done',k<i);li.classList.toggle('on',k===i)})}
+function right(){const R=$('#right'),f=S.focus,s=S.res.summary,e=$('#errbox');let h='';
+ if(!f){
+  const risk=S.res.bags.filter(b=>!b.ok),why=Object.entries(s.reasons);
+  const full=S.res.flights.filter(x=>x.cap&&x.load/x.cap>=.9).sort((a,b)=>b.load/b.cap-a.load/a.cap);
+  h=`<div class="hd"><h1>Needs attention</h1><span>${s.assigned.toLocaleString()} of ${s.bags.toLocaleString()} delivered</span></div>
+  <div class="seg"><button data-tab="bags" aria-pressed="${S.tab==='bags'}">At-risk bags</button><button data-tab="fl" aria-pressed="${S.tab==='fl'}">Full flights</button></div>`;
+  if(S.tab==='bags'){const rows=risk.filter(b=>S.why==='all'||b.reason===S.why);
+   h+=`<div class="chips"><button data-why="all" aria-pressed="${S.why==='all'}">All ${risk.length}</button>${why.map(([k,v])=>`<button data-why="${esc(k)}" aria-pressed="${S.why===k}">${SHORT[k]} ${v}</button>`).join('')}</div>`
+   +rows.slice(0,40).map(b=>`<button class="item" data-bag="${b.id}"><span><b>${b.id}</b><small>${ia(b.o)} → ${ia(b.d)} · ready ${fmt(b.ready)}</small></span><span class="pill bad">${SHORT[b.reason]}</span></button>`).join('')
+   +(rows.length>40?`<p style="color:var(--mute);font-size:13px">Showing 40 of ${rows.length}. Search for a bag ID to find others.</p>`:'')+(rows.length?'':'<p style="color:var(--mute)">Every bag has a route.</p>')}
+  else h+=full.slice(0,40).map(x=>`<button class="item" data-fl="${x.id}"><span><b>${x.id}</b><small>${ia(x.o)} → ${ia(x.d)} · departs ${fmt(x.dep)}</small></span><span><span class="meter"><b style="width:${x.load/x.cap*100}%;background:var(--bad)"></b></span>${x.load}/${x.cap}</span></button>`).join('')||'<p style="color:var(--mute)">No flight is over 90% full.</p>';
+  h+=`<p style="color:var(--mute);font-size:13px;margin-top:12px">${s.rerouted.toLocaleString()} bags were moved off full flights. ${s.flights} flights, ${s.edges.toLocaleString()} legal connections.</p>`;
+ }else{h=`<button class="back" data-back>← Back to overview</button>`;
+  if(f.t==='bag'){const b=S.res.bags.find(x=>x.id===f.id);
+   h+=`<div class="hd"><h1>${b.id}</h1>${b.ok?'<span class="pill ok">Delivered</span>':'<span class="pill bad">'+SHORT[b.reason]+'</span>'}</div><p style="margin:0;color:var(--mute)">${esc(S.ap[b.o].name)} → ${esc(S.ap[b.d].name)} · ready ${fmt(b.ready)} · deadline ${fmt(b.deadline)} · priority ${b.pri}</p>`;
+   if(!b.ok){const w=WHY[b.reason]||['',''];h+=`<div class="now"><b>${esc(b.reason)}</b><small>${w[0]}</small></div><p><b>Next action</b><br><span style="color:var(--mute)">${w[1]}</span></p>`}
+   else h+=`<div class="now" id="live"></div>`+steps(b)}
+  if(f.t==='fl'){const x=S.fl[f.id],r=S.res.flights.find(y=>y.id===f.id),u=r&&r.cap?r.load/r.cap:0,bg=S.fb[f.id]||[];
+   h+=`<div class="hd"><h1>${x.id}</h1>${r?`<span class="pill ${u>.9?'bad':u>=.6?'warn':'ok'}">${Math.round(u*100)}% full</span>`:'<span class="pill bad">Cancelled</span>'}</div><p style="margin:0;color:var(--mute)">${esc(S.ap[x.o].name)} (${ia(x.o)}) → ${esc(S.ap[x.d].name)} (${ia(x.d)})<br>Departs ${fmt(x.dep)} · lands ${fmt(x.arr)}</p>`;
+   h+=r?`<div style="margin-top:12px"><span class="meter"><b style="width:${u*100}%;background:${heat(u)}"></b></span>${r.load} of ${r.cap} bags</div><button class="btn d" data-cx-fl="${x.id}">Cancel flight and replan</button><h2 style="margin-top:16px">Bags on this flight</h2>${bg.slice(0,12).map(b=>`<button class="item" data-bag="${b.id}"><span><b>${b.id}</b><small>${ia(b.o)} → ${ia(b.d)}</small></span><span style="color:var(--mute)">${b.legs.length-1} conn.</span></button>`).join('')||'<p style="color:var(--mute)">No bags assigned.</p>'}`:`<button class="btn" data-un-fl="${x.id}">Restore flight</button>`}
+  if(f.t==='ap'){const a=S.ap[f.id],dep=S.res.flights.filter(x=>x.o===f.id),closed=S.closed.has(f.id);
+   h+=`<div class="hd"><h1>${a.iata}</h1><span>${a.hub?'Hub':'Spoke'}</span></div><p style="margin:0;color:var(--mute)">${esc(a.name)} · ${dep.length} departures · ${dep.reduce((q,x)=>q+x.load,0).toLocaleString()} bags on departing flights</p>
+   <button class="btn ${closed?'':'d'}" ${closed?`data-un-ap="${f.id}">Reopen airport`:`data-cx-ap="${f.id}">Close airport and replan`}</button>
+   <h2 style="margin-top:16px">Next departures</h2>${dep.filter(x=>x.dep>=S.t).sort((a,b)=>a.dep-b.dep).slice(0,8).map(x=>`<button class="item" data-fl="${x.id}"><span><b>${fmt(x.dep)}</b> ${x.id}<small>to ${esc(S.ap[x.d].name)}</small></span><span style="color:var(--mute)">${x.load}/${x.cap}</span></button>`).join('')||'<p style="color:var(--mute)">No more departures today.</p>'}`}}
+ R.innerHTML=h;if(e)R.prepend(e);S.idx=-1;drawAir()}
+function focusOn(t,id){S.focus={t,id};history.replaceState(null,'','#'+t+'='+id);drawStatic();right()}
+function unfocus(){S.focus=null;history.replaceState(null,'',location.pathname);drawStatic();right()}
+
+/* ---------- view ---------- */
+function view(){svg.setAttribute('viewBox',vb.map(v=>v.toFixed(1)).join(' '))}
+function fit(){const r=svg.getBoundingClientRect(),W=r.width||innerWidth,H=r.height||innerHeight,d=wide(),L=d?332:0,R=d?392:0,B=d?120:0,fw=W-L-R,fh=H-B,s=Math.min(fw/690,fh/680),w=W/s,h=H/s;
+ vb=[330-(L+fw/2)/s,332-(fh/2)/s,w,h];view()}
+function zoom(k,cx,cy){const[x,y,w,h]=vb,nw=Math.min(1400,Math.max(90,w/k)),nh=nw*h/w;cx=cx??x+w/2;cy=cy??y+h/2;vb=[cx-(cx-x)*nw/w,cy-(cy-y)*nh/h,nw,nh];view()}
+const scaleOf=()=>{const r=svg.getBoundingClientRect();return r.width/vb[2]};
+svg.addEventListener('wheel',e=>{e.preventDefault();const r=svg.getBoundingClientRect(),s=scaleOf();zoom(e.deltaY<0?1.18:1/1.18,vb[0]+(e.clientX-r.left)/s,vb[1]+(e.clientY-r.top)/s)},{passive:false});
+addEventListener('pointerdown',()=>{moved=0});
+svg.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY]});
+addEventListener('pointermove',e=>{if(!drag)return;const s=scaleOf(),dx=e.clientX-drag[0],dy=e.clientY-drag[1];moved+=Math.abs(dx)+Math.abs(dy);if(moved>5){svg.classList.add('drag');$('#tip').style.display='none'}vb=[vb[0]-dx/s,vb[1]-dy/s,vb[2],vb[3]];drag=[e.clientX,e.clientY];view()});
+addEventListener('pointerup',()=>{drag=null;svg.classList.remove('drag')});
+addEventListener('resize',fit);
+svg.addEventListener('mousemove',e=>{const el=e.target.closest('[data-fl],[data-ap]'),tip=$('#tip');if(!el||drag){tip.style.display='none';return}
+ if(el.dataset.fl){const f=S.res.flights.find(x=>x.id===el.dataset.fl);if(!f)return;tip.innerHTML=`<b>${f.id}</b> ${ia(f.o)} → ${ia(f.d)}<br>${fmt(f.dep)} – ${fmt(f.arr)} · ${f.load}/${f.cap} bags`}
+ else{const a=S.ap[el.dataset.ap];tip.innerHTML=`<b>${a.iata}</b> ${esc(a.name)}`}
+ tip.style.display='block';tip.style.left=Math.min(e.clientX+14,innerWidth-250)+'px';tip.style.top=(e.clientY+14)+'px'});
+svg.addEventListener('mouseleave',()=>$('#tip').style.display='none');
+function setPlay(on){S.play=on;$('#play').innerHTML=on?'<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>';last=0;if(on)requestAnimationFrame(tick)}
+function tick(ts){if(!S.play)return;if(last&&S.res){S.t+=(ts-last)/1000*S.speed;if(S.t>S.tmax)S.t=S.tmin;$('#time').value=S.t;drawAir()}last=ts;requestAnimationFrame(tick)}
+
+/* ---------- interaction ---------- */
+function applyPre(n){const[b,m,c,cl]=PRE[n];$('#bags').value=b;$('#mct').value=m;$('#cap').value=c;S.closed=new Set(cl);S.cx.clear();plan()}
+function suggest(){const q=$('#q').value.trim().toLowerCase(),el=$('#sug');if(!q||!S.res){el.hidden=true;return}
+ const a=S.net.airports.filter(x=>x.iata.toLowerCase().startsWith(q)||x.name.toLowerCase().startsWith(q)).slice(0,3).map(x=>`<button data-sug="ap:${x.code}">${x.iata} <em>${esc(x.name)}</em></button>`),
+  f=Object.keys(S.fl).filter(i=>i.toLowerCase().startsWith(q)).slice(0,3).map(i=>`<button data-sug="fl:${i}">${i} <em>${ia(S.fl[i].o)} → ${ia(S.fl[i].d)}</em></button>`),
+  b=S.res.bags.filter(x=>x.id.toLowerCase().startsWith(q)).slice(0,3).map(x=>`<button data-sug="bag:${x.id}">${x.id} <em>${ia(x.o)} → ${ia(x.d)}</em></button>`),all=[...a,...f,...b];
+ el.innerHTML=all.join('')||'<button disabled><em>No bag, flight or airport matches</em></button>';el.hidden=false}
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('#sug').hidden=true;if(moved>5){moved=0;return}
+ const el=e.target.closest('[data-bag],[data-fl],[data-ap],[data-back],[data-cx-fl],[data-cx-ap],[data-un-fl],[data-un-ap],[data-pre],[data-tab],[data-why],[data-sug],[data-sp],#csv,#clear,#theme,#play,#zi,#zo,#z0');if(!el)return;const d=el.dataset;
+ if(d.sug){const[t,id]=d.sug.split(':');$('#q').value='';$('#sug').hidden=true;focusOn(t,id)}
+ else if(d.bag)focusOn('bag',d.bag);else if(d.fl)focusOn('fl',d.fl);else if(d.ap)focusOn('ap',d.ap);
+ else if('back' in d)unfocus();
+ else if(d.cxFl){S.cx.add(d.cxFl);plan()}else if(d.cxAp){S.closed.add(d.cxAp);plan()}
+ else if(d.unFl){S.cx.delete(d.unFl);plan()}else if(d.unAp){S.closed.delete(d.unAp);plan()}
+ else if(d.pre)applyPre(d.pre);
+ else if(d.tab){S.tab=d.tab;right()}else if(d.why){S.why=d.why;right()}
+ else if(d.sp){S.speed=+d.sp;document.querySelectorAll('[data-sp]').forEach(b=>b.setAttribute('aria-pressed',b===el))}
+ else if(el.id==='clear'){S.cx.clear();S.closed.clear();plan()}
+ else if(el.id==='play')setPlay(!S.play);else if(el.id==='zi')zoom(1.4);else if(el.id==='zo')zoom(1/1.4);else if(el.id==='z0')fit();
+ else if(el.id==='theme'){const r=document.documentElement,dk=matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=(r.dataset.theme||(dk?'dark':'light'))==='dark'?'light':'dark'}
+ else if(el.id==='csv'){const r=['bag,origin,destination,status,itinerary,arrival,deadline,detail'];S.res.bags.forEach(b=>r.push([b.id,ia(b.o),ia(b.d),b.ok?'DELIVERED':'UNASSIGNED',b.legs.join('>'),b.arrival??'',b.deadline,b.reason||''].join(',')));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([r.join('\n')],{type:'text/csv'}));a.download='bag-plan.csv';a.click()}});
+$('#time').addEventListener('input',e=>{S.t=+e.target.value;if(S.res)drawAir()});
+['bags','mct','cap','seed'].forEach(i=>$('#'+i).addEventListener('input',()=>plan()));
+$('#q').addEventListener('input',suggest);
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){const b=$('#sug button[data-sug]');if(b)b.click()}if(e.key==='Escape'){e.target.value='';$('#sug').hidden=true;e.target.blur()}});
+addEventListener('keydown',e=>{const typing=/INPUT|SELECT|TEXTAREA/.test(e.target.tagName);
+ if(e.key==='/'&&!typing){e.preventDefault();$('#q').focus()}
+ else if(e.code==='Space'&&!typing&&e.target.tagName!=='BUTTON'){e.preventDefault();setPlay(!S.play)}
+ else if(e.key==='Escape'&&!typing&&S.focus)unfocus()});
+boot();
+</script>
+</body>
+</html>
